@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,12 +13,16 @@
             text-align: center;
             padding: 20px;
         }
-        input, select, button {
+
+        input,
+        select,
+        button {
             padding: 10px;
             margin: 10px;
             border-radius: 5px;
             border: none;
         }
+
         .output {
             margin-top: 20px;
             padding: 10px;
@@ -25,10 +30,13 @@
             border-radius: 5px;
             text-align: left;
         }
-        .output span, .output code {
+
+        .output span,
+        .output code {
             font-size: 20px;
             white-space: nowrap;
         }
+
         .output code {
             background-color: #1e1e1e;
             padding: 5px;
@@ -37,24 +45,36 @@
             color: #00ff00;
             white-space: pre-wrap;
         }
+
         .obfuscated {
             animation: obfuscate 1s infinite;
         }
+
         @keyframes obfuscate {
-            0% { opacity: 1; }
-            50% { opacity: 0.1; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.1;
+            }
+
+            100% {
+                opacity: 1;
+            }
         }
     </style>
 </head>
+
 <body>
     <h1>Minecraft Color Code Generator</h1>
-    
+
     <label for="text">Enter Text:</label>
     <input type="text" id="text" placeholder="Type your text here">
-    
+
     <label for="color">Choose Color:</label>
-    <select id="color">
+    <select id="color" onchange="toggleCustomColor()">
+        <option value="none">None</option>
         <option value="red">Red</option>
         <option value="blue">Blue</option>
         <option value="green">Green</option>
@@ -70,11 +90,14 @@
         <option value="dark_green">Dark Green</option>
         <option value="dark_aqua">Dark Aqua</option>
         <option value="black">Black</option>
-        <option value="rainbow">Rainbow</option>
+        <option value="custom">Custom Color</option>
     </select>
 
-    <label for="styles">Choose Styles:</label>
-    <select id="styles" multiple>
+    <input type="color" id="customColor" style="display:none;" title="Choose Custom Color">
+
+    <label for="styles">Choose Style:</label>
+    <select id="styles">
+        <option value="none">None</option>
         <option value="bold">Bold</option>
         <option value="italic">Italic</option>
         <option value="underline">Underline</option>
@@ -82,8 +105,21 @@
         <option value="obfuscated">Obfuscated</option>
     </select>
 
+    <label for="gradientType">Choose Gradient:</label>
+    <select id="gradientType">
+        <option value="none">None</option>
+        <option value="gradient">Smooth Gradient</option>
+        <option value="hard_gradient">Hard Gradient</option>
+        <option value="rainbow">Rainbow</option>
+    </select>
+
+    <div id="gradientOptions" style="display:none;">
+        <input type="color" id="color1" title="Choose Color 1">
+        <input type="color" id="color2" title="Choose Color 2">
+        <input type="text" id="rainbowParams" placeholder="Rainbow Params (e.g., 0.5:0.8:0.1)" style="display:none;">
+    </div>
+
     <button onclick="addText()">Add Text</button>
-    
     <button onclick="clearText()">Clear Text</button>
 
     <div class="output">
@@ -97,18 +133,35 @@
     </div>
 
     <script>
+        function toggleCustomColor() {
+            const color = document.getElementById('color').value;
+            document.getElementById('customColor').style.display = (color === 'custom') ? 'inline-block' : 'none';
+        }
+
+        document.getElementById('gradientType').addEventListener('change', function () {
+            const gradientType = this.value;
+            document.getElementById('gradientOptions').style.display = (gradientType !== 'none') ? 'block' : 'none';
+            document.getElementById('rainbowParams').style.display = (gradientType === 'rainbow') ? 'block' : 'none';
+        });
+
         function addText() {
             const text = document.getElementById('text').value;
             const color = document.getElementById('color').value;
-            const styles = Array.from(document.getElementById('styles').selectedOptions).map(option => option.value);
+            const customColor = document.getElementById('customColor').value; // No need to remove the #
+            const style = document.getElementById('styles').value;
+            const gradientType = document.getElementById('gradientType').value;
+            const color1 = document.getElementById('color1').value; // Keep the # for hex code
+            const color2 = document.getElementById('color2').value; // Keep the # for hex code
+            const rainbowParams = document.getElementById('rainbowParams').value;
+
             let formattedText = document.getElementById('formattedText').innerHTML;
             let htmlCode = document.getElementById('htmlCode').innerText;
 
             let styleTags = '';
             let closingTags = '';
-            
-            styles.forEach(style => {
-                switch(style) {
+
+            if (style !== 'none') { // Apply style only if 'None' is not selected
+                switch (style) {
                     case 'bold':
                         styleTags += '<b>';
                         closingTags = '</b>' + closingTags;
@@ -130,13 +183,20 @@
                         closingTags = '</obf>' + closingTags;
                         break;
                 }
-            });
+            }
 
             let newText;
-            if (color === 'rainbow') {
-                newText = `<rainbow>${styleTags}${text}${closingTags}</rainbow>`;
-            } else {
+            if (gradientType === 'gradient' || gradientType === 'hard_gradient') {
+                const tag = gradientType === 'gradient' ? 'gradient' : 'hard_gradient';
+                newText = `<${tag}:${color1}:${color2}>${styleTags}${text}${closingTags}</${tag}>`;
+            } else if (gradientType === 'rainbow') {
+                newText = `<rainbow${rainbowParams ? ':' + rainbowParams : ''}>${styleTags}${text}${closingTags}</rainbow>`;
+            } else if (color === 'custom') {
+                newText = `${styleTags}<color:${customColor}>${text}</color>${closingTags}`;
+            } else if (color !== 'none') {
                 newText = `${styleTags}<${color}>${text}</${color}>${closingTags}`;
+            } else {
+                newText = `${styleTags}${text}${closingTags}`;
             }
 
             // Append new formatted text
@@ -146,6 +206,7 @@
             document.getElementById('formattedText').innerHTML = formattedText;
             document.getElementById('htmlCode').innerText = htmlCode;
             document.getElementById('text').value = ''; // Clear input after adding
+            document.getElementById('rainbowParams').value = ''; // Clear rainbow params after adding
         }
 
         function clearText() {
@@ -154,5 +215,5 @@
         }
     </script>
 </body>
-</html>
 
+</html>
